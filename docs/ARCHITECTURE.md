@@ -11,6 +11,10 @@ Its stratum wire format is **frozen byte-for-byte** by golden-vector
 regression tests built from a recorded real-miner session (§7).
 Inspired by [public-pool](https://github.com/benjamin-wilson/public-pool).
 
+#### Why Stratum V1 (!V2)
+ASICs stock firmware typically support V1, V1 works for centralised fleets
+V2 can be added for security and efficiency gains for distributed pools.
+
 ## 1. System context
 
 ```
