@@ -1,0 +1,43 @@
+[project]
+name = "prometejs-miner"
+dynamic = ["version"]
+description = "Self-hosted Bitcoin solo-mining stratum server with quanta work accounting"
+requires-python = ">=3.11"
+dependencies = [
+    "aiohttp>=3.9",
+    "pyzmq>=25",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+
+[project.scripts]
+prometejs-miner = "prometejs_miner.main:cli"
+
+[project.urls]
+Repository = "https://github.com/prometejs/prometejs-miner"
+
+[build-system]
+requires = ["setuptools>=68", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+# Versioning: git tags are semver (vX.Y.Z); wheel versions are PEP 440,
+# derived by setuptools-scm (1.2.3 on a tag, 1.2.4.devN+g<sha> between tags).
+# Docker builds have no .git — workflows pass SETUPTOOLS_SCM_PRETEND_VERSION.
+[tool.setuptools_scm]
+fallback_version = "0.0.0"
+
+# sources live in src/, but the import name stays `prometejs_miner`
+[tool.setuptools]
+package-dir = { "prometejs_miner" = "src" }
+packages = [
+    "prometejs_miner",
+    "prometejs_miner.bitcoin",
+    "prometejs_miner.jobs",
+    "prometejs_miner.quanta",
+    "prometejs_miner.rpc",
+    "prometejs_miner.stratum",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
