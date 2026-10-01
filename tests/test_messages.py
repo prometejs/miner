@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from prometejs_miner.stratum import messages
+from miner.stratum import messages
 
 
 def test_subscribe_response_wire_format():

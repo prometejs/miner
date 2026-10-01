@@ -7,9 +7,9 @@ import pathlib
 
 import aiohttp
 
-from prometejs_miner.config import Settings
-from prometejs_miner.jobs.template import build_template
-from prometejs_miner.stratum.server import StratumServer
+from miner.config import Settings
+from miner.jobs.template import build_template
+from miner.stratum.server import StratumServer
 
 FIXTURES = pathlib.Path(__file__).parent / "fixtures"
 RECORDING = json.loads((FIXTURES / "mock_recording_1.json").read_text())

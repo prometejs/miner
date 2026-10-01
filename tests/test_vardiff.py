@@ -1,6 +1,6 @@
 import time
 
-from prometejs_miner.stratum.vardiff import (
+from miner.stratum.vardiff import (
     MIN_DIFF,
     SessionStatistics,
     nearest_power_of_two,

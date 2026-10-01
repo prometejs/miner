@@ -7,13 +7,13 @@ import pathlib
 
 import pytest
 
-from prometejs_miner.config import Settings
-from prometejs_miner.jobs.manager import JobsManager
-from prometejs_miner.jobs.template import build_template
-from prometejs_miner.jobs.watcher import TemplateWatcher
-from prometejs_miner.quanta.allocator import QuantaAllocator
-from prometejs_miner.quanta.ledger import QuantaLedger
-from prometejs_miner.stratum.session import StratumSession
+from miner.config import Settings
+from miner.jobs.manager import JobsManager
+from miner.jobs.template import build_template
+from miner.jobs.watcher import TemplateWatcher
+from miner.quanta.allocator import QuantaAllocator
+from miner.quanta.ledger import QuantaLedger
+from miner.stratum.session import StratumSession
 
 FIXTURES = pathlib.Path(__file__).parent / "fixtures"
 RECORDING = json.loads((FIXTURES / "mock_recording_1.json").read_text())

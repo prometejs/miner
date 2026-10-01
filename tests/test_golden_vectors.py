@@ -13,8 +13,8 @@ import pathlib
 
 import pytest
 
-from prometejs_miner.jobs.mining_job import MiningJob
-from prometejs_miner.jobs.template import build_template
+from miner.jobs.mining_job import MiningJob
+from miner.jobs.template import build_template
 
 FIXTURES = pathlib.Path(__file__).parent / "fixtures"
 GOLDEN = json.loads((FIXTURES / "golden_vectors.json").read_text())

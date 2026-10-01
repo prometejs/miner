@@ -1,4 +1,4 @@
-# prometejs-miner
+# miner
 
 Self-hosted Bitcoin **solo-mining** Stratum V1 server with a native **quanta**
 layer (per-miner work-space assignment and accounting). Non-custodial by
@@ -13,14 +13,14 @@ Inspired by [public-pool](https://github.com/benjamin-wilson/public-pool).
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — system context, module map,
   concurrency model, work pipeline, stratum lifecycle, quanta design, and the
   correctness/test strategy
-- **[docs/USAGE.md](docs/USAGE.md)** — install, configuration reference, running
-  (bare/Docker), miner setup, status API, operations & troubleshooting
+- **[docs/USAGE.md](docs/USAGE.md)** — install, configuration reference, running,
+  miner setup, status API, operations & troubleshooting
 
 ## Quick start
 
 ```bash
-pip install "git+https://github.com/<owner>/prometejs-miner.git@v0.1.0"
-# or: docker pull ghcr.io/<owner>/prometejs-miner:latest
+oras pull ghcr.io/<owner>/miner:latest && chmod +x miner
+# or: pip install "git+https://github.com/<owner>/miner.git@v0.1.0"
 ```
 
 Point it at your Bitcoin Core node, point your miners at `stratum+tcp://<host>:3333`
@@ -46,7 +46,7 @@ first so changes land in the right layer. Ground rules:
    regenerates the fixtures in a separate commit with an explanation in the PR.
 2. **Tests accompany code.** New behavior needs a test; consensus-critical code
    needs reference vectors or a golden comparison, not just self-consistency.
-   `python -m pytest` must pass — CI runs it plus a Docker build on every PR.
+   `python -m pytest` must pass — CI runs it plus a Nuitka binary build on every PR.
 3. **Keep the dependency direction.** `stratum → jobs → bitcoin`; `src/bitcoin/`
    stays stdlib-only. New third-party dependencies need a strong justification.
 4. **Honest claims only.** Features or docs implying luck/EV improvements from

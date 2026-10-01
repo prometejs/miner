@@ -5,11 +5,11 @@ import pathlib
 
 import pytest
 
-from prometejs_miner.bitcoin.coinbase import TOTAL_EXTRANONCE_SIZE_BYTES
-from prometejs_miner.bitcoin.crypto import hash256
-from prometejs_miner.bitcoin.difficulty import share_difficulty
-from prometejs_miner.jobs.mining_job import MiningJob
-from prometejs_miner.jobs.template import build_template
+from miner.bitcoin.coinbase import TOTAL_EXTRANONCE_SIZE_BYTES
+from miner.bitcoin.crypto import hash256
+from miner.bitcoin.difficulty import share_difficulty
+from miner.jobs.mining_job import MiningJob
+from miner.jobs.template import build_template
 
 FIXTURE = json.loads(
     (pathlib.Path(__file__).parent / "fixtures" / "mock_recording_1.json").read_text()
@@ -43,7 +43,7 @@ def test_witness_commitment_matches_node(template):
 
 def test_merkle_branch_folds_to_full_tree_root(template):
     """Folding any coinbase hash through the branch must equal the full merkle tree."""
-    from prometejs_miner.bitcoin.crypto import merkle_root
+    from miner.bitcoin.crypto import merkle_root
 
     fake_coinbase_hash = hash256(b"anything")
     txids_le = [

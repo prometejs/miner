@@ -1,6 +1,6 @@
 import pytest
 
-from prometejs_miner.bitcoin.encoding import (
+from miner.bitcoin.encoding import (
     address_to_script,
     script_number_encode,
     swap_endian_words,

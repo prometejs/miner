@@ -1,4 +1,4 @@
-# prometejs-miner — Usage
+# miner — Usage
 
 Everything needed to install, configure, run, and operate the server. For how
 it works internally, see [ARCHITECTURE.md](ARCHITECTURE.md).
@@ -18,7 +18,8 @@ it works internally, see [ARCHITECTURE.md](ARCHITECTURE.md).
   Testnet4 is the recommended proving ground: run Core with `-chain=testnet4`
   (RPC port 48332). Unpruned is recommended for mining nodes.
 
-- **Python 3.13+** (bare-metal runs) or **Docker**.
+- **Linux x86-64** for the prebuilt binary, or **Python 3.13** to run from
+  source (the package pins `==3.13.*`, so pip refuses other versions).
 
 - A **payout address** for the network you mine on — it is the stratum
   username, and a found block pays it directly in the coinbase. Supported
@@ -26,22 +27,23 @@ it works internally, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## 2. Install
 
-**Docker (recommended):**
+**Prebuilt Linux binary (recommended)** — a standalone executable published to
+GHCR as an OCI artifact; pull it with [ORAS](https://oras.land):
 
 ```bash
-docker pull ghcr.io/<owner>/prometejs-miner:latest
+oras pull ghcr.io/<owner>/miner:latest && chmod +x miner
 ```
 
 **pip from git** (the supported package path — there is no PyPI listing):
 
 ```bash
-pip install "git+https://github.com/<owner>/prometejs-miner.git@v0.1.0"
+pip install "git+https://github.com/<owner>/miner.git@v0.1.0"
 ```
 
 **Development:**
 
 ```bash
-git clone https://github.com/<owner>/prometejs-miner && cd prometejs-miner
+git clone https://github.com/<owner>/miner && cd miner
 python3.13 -m venv .venv && .venv/bin/pip install -e '.[dev]'
 ```
 
@@ -66,26 +68,12 @@ All configuration is via environment variables:
 
 ## 4. Run
 
-**Bare:**
-
 ```bash
 BITCOIN_RPC_URL=http://127.0.0.1 BITCOIN_RPC_PORT=48332 \
 BITCOIN_RPC_USER=user BITCOIN_RPC_PASSWORD=pass \
 BITCOIN_ZMQ_HOST=tcp://127.0.0.1:3000 \
 NETWORK=testnet QUANTA_POLICY=sequential \
-prometejs-miner
-```
-
-**Docker:**
-
-```bash
-docker run -d --name prometejs-miner \
-  -p 3333:3333 -p 127.0.0.1:3334:3334 \
-  -e BITCOIN_RPC_URL=http://<node-host> -e BITCOIN_RPC_PORT=48332 \
-  -e BITCOIN_RPC_USER=user -e BITCOIN_RPC_PASSWORD=pass \
-  -e BITCOIN_ZMQ_HOST=tcp://<node-host>:3000 \
-  -e NETWORK=testnet \
-  ghcr.io/<owner>/prometejs-miner:latest
+miner
 ```
 
 Startup logs to watch for: `Bitcoin RPC connected` → `Using ZMQ at ...` →
@@ -206,33 +194,30 @@ commit, with the reasoning in the PR.
 
 ### Versioning & release lifecycle
 
-Versioning is **dynamic** (setuptools-scm): git tags are semver (`vX.Y.Z`),
-wheel versions are PEP 440 — `X.Y.Z` when built at a tag, `X.Y.(Z+1).devN+g<sha>`
-between tags. There is no version field to bump anywhere. (Docker builds have
-no `.git`; the workflows inject the version via `SETUPTOOLS_SCM_PRETEND_VERSION`.)
+Versioning is **dynamic** (setuptools-scm): git tags are semver (`vX.Y.Z`) and
+there is no version field to bump anywhere. A build at a tag is `X.Y.Z`; a
+build between tags is `X.Y.(Z+1).devN+g<sha>`.
 
-Two workflows (`.github/workflows/`), with step behavior switching on the
-triggering event:
+**One version everywhere.** The version the binary reports is also its registry
+tag (with `+` written as `-`, since tags cannot contain `+`), so
+`ghcr.io/<owner>/miner:1.2.4.dev3-g2e0ab7abd` holds a binary that reports
+`1.2.4.dev3+g2e0ab7abd`, and `:1.2.3` holds one that reports `1.2.3`.
+
+`main` is the source of truth. Two workflows (`.github/workflows/`):
 
 **`main.yml`** — the pipeline (tests gate everything; make `test` a required
-check in branch protection):
+check in branch protection). Every run compiles a standalone Linux x86-64
+binary with Nuitka and pushes it to GHCR with ORAS under its version plus one
+moving alias; main and release builds are also attested:
 
-- *PR*: both artifacts are produced for hands-on verification — wheel/sdist as
-  a workflow artifact (dev version; expires after 14 days) and a docker image
-  at `ghcr.io/<owner>/prometejs-miner:pr-<N>` (fork PRs get build-only checks).
-- *Merge to main*: rebuilds the release candidates (`sha-<commit>` + `edge`
-  image, wheel) and refreshes a rolling **draft release** pre-named with the
-  next patch version, wheel attached. Edit the tag on the draft for a
-  minor/major bump.
-- *Release published*: the `sha-<commit>` candidate is **promoted** to
-  `:X.Y.Z` + `:latest` by manifest retag (bit-identical, no rebuild), and the
-  wheel is rebuilt at the tag so it carries the exact `X.Y.Z`, replacing the
-  draft's dev-versioned assets.
+- *PR*: `<version>` + `pr-<N>`. Fork PRs have a read-only token, so their run
+  fails at the push.
+- *Merge to main*: `<version>` + `edge`.
+- *Release published*: built at the tag, `X.Y.Z` + `latest`. The run fails if
+  the built version does not equal the release tag.
+- *Pre-release published*: version tag only; `latest` does not move. The tag
+  is compared in PEP 440 form, so `v1.3.0-rc1` is published as `1.3.0rc1`.
 
-**`ghcr.yml`** — registry cleanup:
-
-- *PR closed* (merged or abandoned): that PR's `pr-<N>` image is deleted
-  immediately.
-- *Weekly cron / manual dispatch (with dry-run)*: sweeps leftover `pr-*` tags
-  (>7 days), unpromoted `sha-*` candidates (>30 days), and untagged manifests.
-  Release tags, `latest`, and `edge` are never touched.
+**`ghcr.yml`** — registry cleanup (weekly cron / manual dispatch with dry-run):
+sweeps dev builds (`*.dev*`) and `pr-*` aliases older than 7 days, plus
+untagged manifests. Release tags, `latest`, and `edge` are never touched.

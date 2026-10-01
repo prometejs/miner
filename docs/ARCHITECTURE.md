@@ -1,6 +1,6 @@
-# prometejs-miner — Architecture
+# miner — Architecture
 
-`prometejs-miner` is a self-hosted Bitcoin **solo-mining Stratum V1 server**: it
+`miner` is a self-hosted Bitcoin **solo-mining Stratum V1 server**: it
 turns your own Bitcoin Core node's block templates into mining work, distributes
 that work to ASIC miners with per-miner search-space assignment ("**quanta**"),
 validates the shares that come back, and submits any share meeting network
@@ -19,7 +19,7 @@ V2 can be added for security and efficiency gains for distributed pools.
 
 ```
 ┌──────────────┐  getblocktemplate / submitblock (JSON-RPC)   ┌─────────────────┐
-│ Bitcoin Core │◄─────────────────────────────────────────────┤ prometejs-miner │
+│ Bitcoin Core │◄─────────────────────────────────────────────┤      miner      │
 │  full node   ├─────────────────────────────────────────────►│                 │
 │              │  rawblock notifications (ZMQ pub/sub)        │  stratum :3333  │
 └──────────────┘                                              │  api     :3334  │
@@ -43,7 +43,7 @@ V2 can be added for security and efficiency gains for distributed pools.
 ## 2. Module map
 
 ```
-src/                            import name: prometejs_miner
+src/                            import name: miner
 ├── main.py                     entrypoint: logging + Settings.from_env + serve
 ├── config.py                   Settings dataclass; all configuration via env vars
 ├── bitcoin/                    consensus-level primitives (stdlib only, no deps)
@@ -126,7 +126,7 @@ below thousands of connections (that world belongs to ckpool).
 ## 5. Stratum session lifecycle
 
 ```
-miner                                   prometejs-miner
+miner                                   miner
   │ mining.configure ────────────────────► version-rolling mask 1fffe000 (BIP 310)
   │ mining.subscribe ────────────────────► extranonce1 (quantum) + extranonce2_size=8
   │ mining.suggest_difficulty (optional) ► honored once, echoed as set_difficulty
@@ -203,8 +203,8 @@ quietly mines invalid work. Defense in depth:
 
 All configuration is via environment variables — full table in
 [USAGE.md](USAGE.md). Deployables:
-Docker image (GHCR, built by `release.yml` on `v*` tags), pip-from-git
-package, or a bare venv run of the `prometejs-miner` console command. The status API is intended
+standalone Linux binary (Nuitka build, published to GHCR as an OCI artifact —
+see USAGE §8), pip-from-git package, or a bare venv run of the `miner` console command. The status API is intended
 to stay on localhost / an internal network; the stratum port faces only the
 miner VLAN. Nothing here should ever be internet-exposed.
 

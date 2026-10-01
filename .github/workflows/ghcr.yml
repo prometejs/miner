@@ -1,20 +1,10 @@
-# GHCR cleanup — step behavior switches on the triggering event:
-#
-#   pull_request closed → delete that PR's :pr-<N> image immediately
-#                         (fires on merge AND on close-without-merge, and the
-#                         PR number comes straight from the event — no API
-#                         lookup needed)
-#   cron / dispatch     → stale sweep: leftover pr-* (>7d), unpromoted sha-*
-#                         candidates (>30d), untagged manifests
-#
-# Never touched: semver release tags (X.Y.Z), latest, edge.
+# GHCR cleanup (cron / dispatch): stale sweep of dev builds from PRs and main,
+# tagged X.Y.Z.devN-g<sha> plus the pr-<N> alias (>7d), and untagged manifests.
+# edge is never matched, so the newest main build always survives.
 
 name: ghcr
 
 on:
-  pull_request:
-    types: [closed]
-    branches: [main]
   schedule:
     - cron: "17 4 * * 1" # Mondays 04:17 UTC
   workflow_dispatch:
@@ -31,38 +21,11 @@ jobs:
   cleanup:
     runs-on: ubuntu-latest
     steps:
-      - name: Delete this PR's image
-        if: github.event_name == 'pull_request'
-        uses: dataaxiom/ghcr-cleanup-action@v1
-        continue-on-error: true # tag may not exist (e.g. fork PR, never pushed)
-        with:
-          delete-tags: pr-${{ github.event.pull_request.number }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Delete stale PR images
-        if: github.event_name != 'pull_request'
+      - name: Delete stale dev builds
         uses: dataaxiom/ghcr-cleanup-action@v1
         with:
-          delete-tags: "pr-*"
+          delete-tags: "*.dev*,pr-*"
           older-than: 7 days
-          delete-untagged: false
-          dry-run: ${{ inputs.dry-run || false }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Delete stale unpromoted release candidates
-        if: github.event_name != 'pull_request'
-        uses: dataaxiom/ghcr-cleanup-action@v1
-        with:
-          delete-tags: "sha-*"
-          older-than: 30 days
-          delete-untagged: false
-          dry-run: ${{ inputs.dry-run || false }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Delete untagged manifests
-        if: github.event_name != 'pull_request'
-        uses: dataaxiom/ghcr-cleanup-action@v1
-        with:
           delete-untagged: true
           validate: true
           dry-run: ${{ inputs.dry-run || false }}
