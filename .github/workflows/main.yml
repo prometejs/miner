@@ -93,7 +93,7 @@ jobs:
             miner)
           echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
 
-      - name: Attest the build
+      - name: Attest GHCR artifact
         if: ${{github.event_name != 'pull_request'}}
         uses: actions/attest@v4
         with:
