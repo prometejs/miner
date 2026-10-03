@@ -99,3 +99,9 @@ jobs:
         with:
           subject-name: ghcr.io/${{ github.repository }}
           subject-digest: ${{ steps.push.outputs.digest }}
+
+      - name: Attest binary
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: actions/attest@v4
+        with:
+          subject-path: dist/miner
