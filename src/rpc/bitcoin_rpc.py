@@ -7,6 +7,7 @@ import pathlib
 import aiohttp
 
 from ..config import Settings
+from ..telemetry import operation, trace
 
 logger = logging.getLogger(__name__)
 
@@ -42,14 +43,17 @@ class BitcoinRpc:
             await self._session.close()
 
     async def call(self, method: str, params: list | None = None):
-        self._request_id += 1
-        async with self._session.post(
-            "/", json={"jsonrpc": "1.0", "id": self._request_id, "method": method, "params": params or []}
-        ) as resp:
-            data = await resp.json(content_type=None)
-        if data.get("error") is not None:
-            raise RuntimeError(f"RPC {method} error: {data['error']}")
-        return data["result"]
+        # Keep arbitrary RPC method names and all parameters out of telemetry.
+        known = {"getrpcinfo", "getmininginfo", "getblocktemplate", "submitblock"}
+        with operation("bitcoin.rpc", {"rpc.method": method if method in known else "other"}, kind=trace.SpanKind.CLIENT):
+            self._request_id += 1
+            async with self._session.post(
+                "/", json={"jsonrpc": "1.0", "id": self._request_id, "method": method, "params": params or []}
+            ) as resp:
+                data = await resp.json(content_type=None)
+            if data.get("error") is not None:
+                raise RuntimeError(f"RPC {method} error: {data['error']}")
+            return data["result"]
 
     async def get_mining_info(self) -> dict | None:
         try:

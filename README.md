@@ -55,3 +55,46 @@ first so changes land in the right layer. Ground rules:
 5. **Flow:** fork or branch from `main`, keep PRs focused (one concern per PR),
    and let CI pass before requesting review. For large changes, open an issue
    describing the approach first.
+
+## OpenTelemetry
+
+The service exports traces and metrics using OTLP/HTTP protobuf when an endpoint
+is configured. Export is off by default; existing console logging is unchanged.
+For a collector listening on port 4318, start the miner with:
+
+```sh
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+export OTEL_SERVICE_NAME=prometejs-miner
+uv run miner
+```
+
+The collector must enable its OTLP HTTP receiver and traces/metrics pipelines.
+The base endpoint automatically receives `/v1/traces` and `/v1/metrics` suffixes.
+Alternatively, set `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` and/or
+`OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` to full signal URLs to enable each signal
+separately. This integration uses HTTP/protobuf, not gRPC.
+
+Standard SDK/exporter settings support resource attributes, headers, TLS,
+timeouts, trace sampling and metric export intervals (see `.env.example`).
+Set `OTEL_SDK_DISABLED=true` to disable both signals. The example file is a
+reference; the service reads the process environment, not a dotenv file.
+
+Instrumentation includes:
+
+- `stratum.submit` spans for initialized miners' share validation, with nested
+  `bitcoin.rpc` client spans when a block is submitted; polling/template RPCs
+  also produce client spans.
+- `miner.operations` and `miner.operation.duration` (seconds), by operation,
+  outcome, and bounded RPC method.
+- `miner.connections`, the current number of connected Stratum sessions.
+- `miner.shares`, accepted/rejected shares with bounded rejection reasons.
+- `miner.block.submissions`, accepted/rejected Bitcoin Core submission results
+  (RPC failures are counted as rejected).
+
+Metrics are independent of trace sampling. For a busy miner, consider
+`OTEL_TRACES_SAMPLER=parentbased_traceidratio` and `OTEL_TRACES_SAMPLER_ARG=0.1`.
+No miner addresses, worker names, job IDs, RPC parameters, block payloads, or
+exception messages are attached to telemetry. Logs remain on the console and
+are not exported through OTLP. Providers flush/shut down when the CLI exits.
+See the [OpenTelemetry Python exporter documentation](https://opentelemetry.io/docs/languages/python/exporters/)
+for collector configuration.

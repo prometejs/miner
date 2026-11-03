@@ -14,6 +14,7 @@ import time
 from ..bitcoin.crypto import hash256
 from ..bitcoin.difficulty import share_difficulty
 from ..config import Settings
+from ..telemetry import blocks, operation, shares
 from ..jobs.manager import JobsManager
 from ..jobs.mining_job import MiningJob
 from ..jobs.template import JobTemplate
@@ -140,7 +141,8 @@ class StratumSession:
                     logger.info("submit before initialized")
                     await self.destroy()
                     return
-                await self._handle_submit(messages.Submit.parse(msg))
+                with operation("stratum.submit"):
+                    await self._handle_submit(messages.Submit.parse(msg))
         except messages.MessageError as e:
             await self.write(messages.error_line(e.msg_id, messages.OTHER_UNKNOWN, str(e)))
             if method == "mining.submit":
@@ -259,6 +261,7 @@ class StratumSession:
             await self.write(
                 messages.error_line(submission.id, messages.JOB_NOT_FOUND, "Job not found")
             )
+            shares.add(1, {"outcome": "rejected", "reason": "unknown_job"})
             self.ledger.record_rejected(self.extranonce1)
             return
         template = self.jobs.get_template(job.job_template_id)
@@ -266,6 +269,7 @@ class StratumSession:
             await self.write(
                 messages.error_line(submission.id, messages.JOB_NOT_FOUND, "Job Template not found")
             )
+            shares.add(1, {"outcome": "rejected", "reason": "unknown_template"})
             self.ledger.record_rejected(self.extranonce1)
             return
 
@@ -282,6 +286,7 @@ class StratumSession:
             await self.write(
                 messages.error_line(submission.id, messages.DUPLICATE_SHARE, "Duplicate share")
             )
+            shares.add(1, {"outcome": "rejected", "reason": "duplicate"})
             self.ledger.record_rejected(self.extranonce1)
             return
         self._submission_hashes.add(dedupe_key)
@@ -301,10 +306,12 @@ class StratumSession:
                     submission.id, messages.LOW_DIFFICULTY_SHARE, "Difficulty too low"
                 )
             )
+            shares.add(1, {"outcome": "rejected", "reason": "low_difficulty"})
             self.ledger.record_rejected(self.extranonce1)
             return
 
         await self.write(submission.response_line())
+        shares.add(1, {"outcome": "accepted"})
         self.statistics.add_share(self.session_difficulty)
         self.ledger.record_accepted(self.extranonce1, self.session_difficulty)
 
@@ -314,6 +321,7 @@ class StratumSession:
                 template, version_mask, nonce, self.extranonce1, submission.extranonce2, timestamp
             )
             result = await self.rpc.submit_block(block_hex)
+            blocks.add(1, {"outcome": "accepted" if result is None else "rejected"})
             self.ledger.record_block(self.extranonce1)
             if self.on_block_found:
                 await self.on_block_found(

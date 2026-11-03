@@ -8,6 +8,7 @@ import time
 from aiohttp import web
 
 from ..config import Settings
+from ..telemetry import connections
 from ..jobs.manager import JobsManager
 from ..jobs.watcher import TemplateWatcher
 from ..quanta.allocator import QuantaAllocator
@@ -48,10 +49,12 @@ class StratumServer:
             on_block_found=self._on_block_found,
         )
         self.sessions.add(session)
+        connections.add(1)
         try:
             await session.run()
         finally:
             self.sessions.discard(session)
+            connections.add(-1)
 
     # --- status API --------------------------------------------------------
 

@@ -53,6 +53,9 @@ jobs:
           echo 'from miner.main import cli; cli()' > launcher.py
           uv run --no-sync python -m nuitka --onefile --assume-yes-for-downloads \
             --include-package=miner \
+            --include-package=opentelemetry \
+            --include-distribution-metadata=opentelemetry-sdk \
+            --include-distribution-metadata=opentelemetry-api \
             --include-distribution-metadata=miner \
             --output-dir=dist --output-filename=miner \
             launcher.py

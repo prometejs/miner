@@ -2,6 +2,7 @@ import asyncio
 import logging
 
 from .config import Settings
+from .telemetry import configure_telemetry
 from .stratum.server import StratumServer
 
 
@@ -11,11 +12,14 @@ def cli() -> None:
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
     settings = Settings.from_env()
-    server = StratumServer(settings)
+    shutdown_telemetry = configure_telemetry()
     try:
+        server = StratumServer(settings)
         asyncio.run(server.serve())
     except KeyboardInterrupt:
         pass
+    finally:
+        shutdown_telemetry()
 
 
 if __name__ == "__main__":
