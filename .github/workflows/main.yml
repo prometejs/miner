@@ -97,14 +97,33 @@ jobs:
           echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
 
       - name: Attest GHCR artifact
-        if: ${{github.event_name != 'pull_request'}}
+        id: attest_package
+        if: ${{ github.event_name != 'pull_request' }}
         uses: actions/attest@v4
         with:
+          show-summary: false
           subject-name: ghcr.io/${{ github.repository }}
           subject-digest: ${{ steps.push.outputs.digest }}
 
       - name: Attest binary
+        id: attest_binary
         if: ${{ github.event_name != 'pull_request' }}
         uses: actions/attest@v4
         with:
+          show-summary: false
           subject-path: dist/miner
+
+      - name: Summarize miner attestations
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          PACKAGE_URL: ${{ steps.attest_package.outputs.attestation-url }}
+          BINARY_URL: ${{ steps.attest_binary.outputs.attestation-url }}
+        run: |
+          {
+            echo '## Miner build attestations'
+            echo
+            echo '| Attestation | What it verifies |'
+            echo '| --- | --- |'
+            printf '| [Verify the GHCR package (OCI manifest)](%s) | The package identified by the registry manifest digest. |\n' "$PACKAGE_URL"
+            printf '| [Verify the `miner` executable (Linux amd64)](%s) | The downloaded executable identified by its file digest. |\n' "$BINARY_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
