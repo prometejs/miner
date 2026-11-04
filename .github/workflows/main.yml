@@ -120,7 +120,7 @@ jobs:
           BINARY_URL: ${{ steps.attest_binary.outputs.attestation-url }}
         run: |
           {
-            echo '## Miner build attestations'
+            echo '## Attestations'
             echo
             echo '| Attestation | What it verifies |'
             echo '| --- | --- |'
