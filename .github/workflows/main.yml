@@ -122,8 +122,6 @@ jobs:
           {
             echo '## Attestations'
             echo
-            echo '| Attestation | What it verifies |'
-            echo '| --- | --- |'
-            printf '| [Verify the GHCR package (OCI manifest)](%s) | The package identified by the registry manifest digest. |\n' "$PACKAGE_URL"
-            printf '| [Verify the `miner` executable (Linux amd64)](%s) | The downloaded executable identified by its file digest. |\n' "$BINARY_URL"
+            printf -- '- [OCI manifest](%s)\n' "$PACKAGE_URL"
+            printf -- '- [Binary](%s)\n' "$BINARY_URL"
           } >> "$GITHUB_STEP_SUMMARY"
